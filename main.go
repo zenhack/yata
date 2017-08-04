@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"html/template"
 	"log"
@@ -9,6 +10,8 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"strconv"
+	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -27,6 +30,47 @@ const (
 	Up
 	Down
 )
+
+type NotifyState struct {
+	sync.Mutex
+	ctx     context.Context
+	cancel  context.CancelFunc
+	version int64
+}
+
+func (s *NotifyState) Version() int64 {
+	s.Lock()
+	defer s.Unlock()
+	return s.version
+}
+
+func NewNotifyState() *NotifyState {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &NotifyState{
+		ctx:    ctx,
+		cancel: cancel,
+	}
+}
+
+func (s *NotifyState) Wait(version int64) <-chan struct{} {
+	s.Lock()
+	defer s.Unlock()
+	if s.version >= version {
+		ch := make(chan struct{}, 1)
+		ch <- struct{}{}
+		return ch
+	} else {
+		return s.ctx.Done()
+	}
+}
+
+func (s *NotifyState) Notify() {
+	s.Lock()
+	defer s.Unlock()
+	s.version++
+	s.cancel()
+	s.ctx, s.cancel = context.WithCancel(context.Background())
+}
 
 type SortCol int
 
@@ -69,6 +113,7 @@ type TODO struct {
 }
 
 type Page struct {
+	Version             int64
 	DoneSort, DescrSort SortCol
 	Todos               []TODO
 }
@@ -92,6 +137,8 @@ func (p Page) SortDir() string {
 }
 
 func main() {
+	nstate := NewNotifyState()
+
 	db, err := sql.Open("sqlite3", dbPath)
 	chkfatal(err)
 
@@ -106,6 +153,7 @@ func main() {
 	r.Methods("GET").Path("/").
 		HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			page := Page{
+				Version:   nstate.Version() + 1,
 				DoneSort:  Cleared,
 				DescrSort: Cleared,
 			}
@@ -174,6 +222,7 @@ func main() {
 				INSERT INTO todos(done, descr)
 				VALUES ('false', ?)
 			`, req.FormValue("descr"))
+			nstate.Notify()
 			if chkSrvErr(w, err) {
 				return
 			}
@@ -186,6 +235,7 @@ func main() {
 				DELETE FROM todos
 				WHERE id = ?
 			`, mux.Vars(req)["id"])
+			nstate.Notify()
 			if chkSrvErr(w, err) {
 				return
 			}
@@ -200,10 +250,26 @@ func main() {
 				WHERE id = ?`,
 				isYes(req.FormValue("done")),
 				mux.Vars(req)["id"])
+			nstate.Notify()
 			if chkSrvErr(w, err) {
 				return
 			}
 			doRedirect(w, req)
+		})
+
+	r.Methods("GET").Path("/version/{version:[0-9]+}").
+		HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			i, err := strconv.ParseInt(
+				mux.Vars(req)["version"],
+				10,
+				64,
+			)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+				return
+			}
+			<-nstate.Wait(i)
 		})
 
 	panic(http.ListenAndServe(":8080", r))
