@@ -7,19 +7,14 @@
 			var handleClick = function(formId) {
 				document.getElementById(formId).submit()
 			}
-			var pollChanges = function() {
-
-			}
-			function() {
-				var xhr = new XMLHttpRequest()
-				req.addEventListener("load", function() {
-					if(xhr.readyState === 4 && xhr.status === 200) {
-						window.location.reload()
-					}
-				})
-				req.open("GET", "/notify")
-				req.send()
-			}()
+			var xhr = new XMLHttpRequest()
+			xhr.addEventListener("load", function() {
+				if(xhr.readyState === 4 && xhr.status === 200) {
+					window.location.reload()
+				}
+			})
+			xhr.open("GET", "/version/{{ .Version }}")
+			xhr.send()
 		</script>
 	</head>
 	<body>
