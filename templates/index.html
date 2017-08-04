@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Very Simple TODOs</title>
+		<script>
+			var handleClick = function(formId) {
+				document.getElementById(formId).submit()
+			}
+			var pollChanges = function() {
+
+			}
+			function() {
+				var xhr = new XMLHttpRequest()
+				req.addEventListener("load", function() {
+					if(xhr.readyState === 4 && xhr.status === 200) {
+						window.location.reload()
+					}
+				})
+				req.open("GET", "/notify")
+				req.send()
+			}()
+		</script>
+	</head>
+	<body>
+
+		<form method="post" action="/todos/new">
+			<label for="descr">Descripton</label>
+			<input id="descr" name="descr" />
+			<button type="submit">Add</button>
+		</form>
+
+		<table>
+		<tr>
+			<th>
+				<a href="/?sort_col=done&sort_dir={{ .DoneSort.Invert.ToggleName }}">
+					{{- .DoneSort.ToggleSym }} Done?</a>
+			</th>
+			<th>
+				<a href="/?sort_col=descr&sort_dir={{ .DescrSort.Invert.ToggleName }}">
+					{{- .DescrSort.ToggleSym }} Description</a>
+			</th>
+		</tr>
+		{{ range $todo := .Todos }}
+		<tr>
+			<td>
+				<form id="donebox-{{ $todo.Id }}" method="post" action="/todos/{{ $todo.Id }}/done">
+					<input name="sort_col" type="hidden" value="{{ $.SortCol }}" />
+					<input name="sort_dir" type="hidden" value="{{ $.SortDir }}" />
+					<input name="done" type="checkbox" {{ if .Done }}checked="yes" {{ end -}}
+						onclick='handleClick("donebox-{{ $todo.Id }}")' />
+				</form>
+			</td>
+			<td>{{ .Descr }}</td>
+			<td>
+				<form method="post" action="/todos/delete/{{ $todo.Id }}">
+					<button type="submit">&#x1f5d1;</button>
+				</form>
+			</td>
+		</tr>
+		{{ end }}
+		</table>
+	</body>
+</html>
