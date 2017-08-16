@@ -271,6 +271,7 @@ func main() {
 			}
 			<-nstate.Wait(i)
 		})
+	r.Methods("GET").PathPrefix("/static/").Handler(http.FileServer(http.Dir("")))
 
 	panic(http.ListenAndServe(":8080", r))
 }

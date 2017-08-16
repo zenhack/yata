@@ -10,6 +10,8 @@ proc/cpuinfo
 sandstorm-http-bridge
 sandstorm-http-bridge-config
 sandstorm-manifest
+static
+static/trash.svg
 templates
 templates/index.html
 usr/lib/ld-2.25.so
