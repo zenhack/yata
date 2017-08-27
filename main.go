@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -181,12 +182,14 @@ func main() {
 				case "asc":
 					page.DescrSort = Up
 					less = func(i, j int) bool {
-						return todos[i].Descr < todos[j].Descr
+						return strings.ToLower(todos[i].Descr) <
+							strings.ToLower(todos[j].Descr)
 					}
 				case "desc":
 					page.DescrSort = Down
 					less = func(i, j int) bool {
-						return todos[i].Descr > todos[j].Descr
+						return strings.ToLower(todos[i].Descr) >
+							strings.ToLower(todos[j].Descr)
 					}
 				}
 			}
