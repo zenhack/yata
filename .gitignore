@@ -2,3 +2,7 @@
 *.swp
 *.spk
 /app
+
+# Misc haskell stuff:
+/dist
+/dist-newstyle
