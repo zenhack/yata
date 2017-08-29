@@ -9,9 +9,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
-	"sort"
 	"strconv"
-	"strings"
 	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -26,11 +24,17 @@ var (
 	//inSandstorm = os.Getenv("SANDSTORM") == "1"
 )
 
+type SortDir string
+
 const (
-	Cleared SortCol = iota
-	Up
-	Down
+	Asc  SortDir = "asc"
+	Desc SortDir = "desc"
 )
+
+type SortInfo struct {
+	Col string
+	Dir SortDir
+}
 
 type NotifyState struct {
 	sync.Mutex
@@ -39,10 +43,56 @@ type NotifyState struct {
 	version int64
 }
 
+func (d SortDir) Invert() SortDir {
+	switch d {
+	case Asc:
+		return Desc
+	case Desc:
+		return Asc
+	default:
+		panic("Invalid SortDir: " + string(d))
+	}
+}
+
 func (s *NotifyState) Version() int64 {
 	s.Lock()
 	defer s.Unlock()
 	return s.version
+}
+
+func getTodos(db *sql.DB, columnName string, dir SortDir) ([]TODO, error) {
+	// XXX: I am dissatisfied with this. Gluing strings together to
+	// build queries is a big no-no, but Query won't do substitution for
+	// column names and asc/desc. It's either this or a bunch of
+	// repetative code. Some kind of query builder library would be nice
+	// here.
+
+	if dir != Asc && dir != Desc {
+		panic("invalid SortDir: " + string(dir))
+	}
+	if columnName != "id" && columnName != "done" && columnName != "descr" {
+		panic("invalid columnName: " + columnName)
+	}
+
+	rows, err := db.Query(`
+		SELECT id, done, descr
+		FROM "todos"
+		ORDER BY `+columnName+` COLLATE NOCASE `+string(dir),
+		columnName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	todos := []TODO{}
+	for rows.Next() {
+		var next TODO
+		err := rows.Scan(&next.Id, &next.Done, &next.Descr)
+		if err != nil {
+			return nil, err
+		}
+		todos = append(todos, next)
+	}
+	return todos, nil
 }
 
 func NewNotifyState() *NotifyState {
@@ -73,37 +123,14 @@ func (s *NotifyState) Notify() {
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 }
 
-type SortCol int
-
-func (s SortCol) ToggleSym() string {
+func (s SortDir) ArrowChar() string {
 	switch s {
-	case Cleared:
-		return ""
-	case Up:
+	case Asc:
 		return "\u2191"
-	case Down:
+	case Desc:
 		return "\u2193"
 	default:
-		panic(s)
-	}
-}
-
-func (s SortCol) ToggleName() string {
-	switch s {
-	case Cleared, Up:
-		return "asc"
-	case Down:
-		return "desc"
-	default:
-		panic(s)
-	}
-}
-
-func (s SortCol) Invert() SortCol {
-	if s == Up {
-		return Down
-	} else {
-		return Up
+		panic("Invalid sort dir:" + string(s))
 	}
 }
 
@@ -114,27 +141,27 @@ type TODO struct {
 }
 
 type Page struct {
-	Version             int64
-	DoneSort, DescrSort SortCol
-	Todos               []TODO
+	Version int64
+	SortInfo
+	Todos []TODO
 }
 
-func (p Page) SortCol() string {
-	if p.DoneSort == Cleared {
-		return "descr"
-	} else if p.DescrSort == Cleared {
-		return ""
-	} else {
-		return "done"
+func RequestSortInfo(req *http.Request) SortInfo {
+	info := SortInfo{
+		Col: req.FormValue("sort_col"),
+		Dir: SortDir(req.FormValue("sort_dir")),
 	}
-}
-
-func (p Page) SortDir() string {
-	if p.DoneSort == Cleared {
-		return p.DescrSort.ToggleName()
-	} else {
-		return p.DoneSort.ToggleName()
+	switch info.Col {
+	case "id", "done", "descr":
+	default:
+		info.Col = "id"
 	}
+	switch info.Dir {
+	case Asc, Desc:
+	default:
+		info.Dir = Asc
+	}
+	return info
 }
 
 func main() {
@@ -154,67 +181,13 @@ func main() {
 	r.Methods("GET").Path("/").
 		HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			page := Page{
-				Version:   nstate.Version() + 1,
-				DoneSort:  Cleared,
-				DescrSort: Cleared,
+				Version:  nstate.Version() + 1,
+				SortInfo: RequestSortInfo(req),
 			}
-			todos := []TODO{}
-			less := func(i, j int) bool {
-				return todos[i].Id < todos[j].Id
-			}
-
-			switch req.FormValue("sort_col") {
-			case "done":
-				switch req.FormValue("sort_dir") {
-				case "asc":
-					page.DoneSort = Up
-					less = func(i, j int) bool {
-						return !todos[i].Done && todos[j].Done
-					}
-				case "desc":
-					page.DoneSort = Down
-					less = func(i, j int) bool {
-						return todos[i].Done && !todos[j].Done
-					}
-				}
-			case "descr":
-				switch req.FormValue("sort_dir") {
-				case "asc":
-					page.DescrSort = Up
-					less = func(i, j int) bool {
-						return strings.ToLower(todos[i].Descr) <
-							strings.ToLower(todos[j].Descr)
-					}
-				case "desc":
-					page.DescrSort = Down
-					less = func(i, j int) bool {
-						return strings.ToLower(todos[i].Descr) >
-							strings.ToLower(todos[j].Descr)
-					}
-				}
-			}
-
-			rows, err := db.Query(`
-				SELECT id, done, descr
-				FROM "todos"
-			`)
+			todos, err := getTodos(db, page.SortInfo.Col, page.SortInfo.Dir)
 			if chkSrvErr(w, err) {
 				return
 			}
-			defer rows.Close()
-			for rows.Next() {
-				var next TODO
-				if chkSrvErr(w, rows.Scan(
-					&next.Id,
-					&next.Done,
-					&next.Descr,
-				)) {
-					return
-				}
-				todos = append(todos, next)
-			}
-			rows.Close()
-			sort.Slice(todos, less)
 			page.Todos = todos
 			tpls.ExecuteTemplate(w, "index.html", page)
 		})
