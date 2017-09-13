@@ -21,7 +21,6 @@ var (
 	tpls = template.Must(template.ParseGlob("templates/*.html"))
 
 	dbPath = defaultStr(os.Getenv("DB_PATH"), ":memory:")
-	//inSandstorm = os.Getenv("SANDSTORM") == "1"
 )
 
 type SortDir string
