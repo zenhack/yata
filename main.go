@@ -195,7 +195,7 @@ func main() {
 		HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			_, err := db.Exec(`
 				INSERT INTO todos(done, descr)
-				VALUES ('false', ?)
+				VALUES (0, ?)
 			`, req.FormValue("descr"))
 			nstate.Notify()
 			if chkSrvErr(w, err) {
