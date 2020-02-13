@@ -19,9 +19,9 @@ const pkgdef :Spk.PackageDefinition = (
 
     appTitle = (defaultText = "Yet Another TODO"),
 
-    appVersion = 5,  # Increment this for every release.
+    appVersion = 6,  # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "0.0.6"),
+    appMarketingVersion = (defaultText = "0.1"),
     # Human-readable representation of appVersion. Should match the way you
     # identify versions of your app in documentation and marketing.
 
@@ -119,7 +119,7 @@ const pkgdef :Spk.PackageDefinition = (
       screenshots = [
         (width = 375, height = 667, png = embed "screenshot.png"),
       ],
-      #changeLog = (defaultText = embed "path/to/sandstorm-specific/changelog.md"),
+      changeLog = (defaultText = embed "CHANGELOG.md"),
       # Documents the history of changes in Github-flavored markdown format (with the same restrictions
       # as govern `description`). We recommend formatting this with an H1 heading for each version
       # followed by a bullet list of changes.
