@@ -6,6 +6,7 @@ dev: app
 	spk dev
 app: $(wildcard *.go)
 	go build -v -i -o $@
+	strip $@
 clean:
 	rm -f app
 
