@@ -57,11 +57,11 @@ const pkgdef :Spk.PackageDefinition = (
       website = "https://github.com/zenhack/yata",
       # This should be the app's main website url.
 
-      codeUrl = "http://example.com",
+      codeUrl = "http://github.com/zenhack/yata",
       # URL of the app's source code repository, e.g. a GitHub URL.
       # Required if you specify a license requiring redistributing code, but optional otherwise.
 
-      license = (openSource = agpl3),
+      license = (openSource = apache2),
       # The license this package is distributed under.  See
       # https://docs.sandstorm.io/en/latest/developing/publishing-apps/#license
 
