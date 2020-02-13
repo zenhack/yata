@@ -57,7 +57,7 @@ const pkgdef :Spk.PackageDefinition = (
       website = "https://github.com/zenhack/yata",
       # This should be the app's main website url.
 
-      codeUrl = "http://github.com/zenhack/yata",
+      codeUrl = "https://github.com/zenhack/yata",
       # URL of the app's source code repository, e.g. a GitHub URL.
       # Required if you specify a license requiring redistributing code, but optional otherwise.
 
