@@ -48,10 +48,10 @@ const pkgdef :Spk.PackageDefinition = (
       # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/package.capnp
       icons = (
         # Various icons to represent the app in various contexts.
-        #appGrid = (svg = embed "path/to/appgrid-128x128.svg"),
-        #grain = (svg = embed "path/to/grain-24x24.svg"),
-        #market = (svg = embed "path/to/market-150x150.svg"),
-        #marketBig = (svg = embed "path/to/market-big-300x300.svg"),
+        appGrid = .icon,
+        grain = .icon,
+        market = .icon,
+        marketBig = .icon
       ),
 
       website = "https://github.com/zenhack/yata",
@@ -226,6 +226,13 @@ const pkgdef :Spk.PackageDefinition = (
   #  # comes in to your app's API, sandstorm-http-bridge will prefix the request's path with
   #  # this string, if specified.
   #),
+);
+
+const icon :Spk.Metadata.Icon = (
+  png = (
+    dpi1x = embed "checkbox.png",
+    dpi2x = embed "checkbox.png",
+  ),
 );
 
 const myCommand :Spk.Manifest.Command = (
