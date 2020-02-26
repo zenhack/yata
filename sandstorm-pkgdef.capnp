@@ -48,10 +48,30 @@ const pkgdef :Spk.PackageDefinition = (
       # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/package.capnp
       icons = (
         # Various icons to represent the app in various contexts.
-        appGrid = .icon,
-        grain = .icon,
-        market = .icon,
-        marketBig = .icon
+        appGrid = (
+          png = (
+            dpi1x = embed "icons/128.png",
+            dpi2x = embed "icons/256.png",
+          ),
+        ),
+        grain = (
+          png = (
+            dpi1x = embed "icons/24.png",
+            dpi2x = embed "icons/48.png",
+          ),
+        ),
+        market = (
+          png = (
+            dpi1x = embed "icons/150.png",
+            dpi2x = embed "icons/300.png",
+          ),
+        ),
+        marketBig = (
+          png = (
+            dpi1x = embed "icons/300.png",
+            dpi2x = embed "icons/600.png",
+          ),
+        ),
       ),
 
       website = "https://github.com/zenhack/yata",
