@@ -7,14 +7,6 @@
 			var handleClick = function(formId) {
 				document.getElementById(formId).submit()
 			}
-			var xhr = new XMLHttpRequest()
-			xhr.addEventListener("load", function() {
-				if(xhr.readyState === 4 && xhr.status === 200) {
-					window.location.reload()
-				}
-			})
-			xhr.open("GET", "/version/{{ .Version }}")
-			xhr.send()
 		</script>
 	</head>
 	<body>
@@ -59,5 +51,33 @@
 		</tr>
 		{{ end }}
 		</table>
+		<script>
+			(function() {
+				console.log("polling for changes...");
+				var pollDelay = 10;
+				var maxPollDelay = 2000;
+				function longPoll() {
+					var xhr = new XMLHttpRequest();
+					xhr.onreadystatechange = function() {
+						if(xhr.readyState !== XMLHttpRequest.DONE) {
+							console.log("request still pending...");
+							return;
+						}
+						if(xhr.status === 200) {
+							window.location.reload()
+						} else {
+							// Request failed. Try again, using an exponential backoff
+							// to avoid excessive resource usage for non-transient failures.
+							console.error("Long poll failed; trying again in ", pollDelay, " milliseconds");
+							setTimeout(longPoll, pollDelay);
+							pollDelay = Math.min(pollDelay * 2, maxPollDelay);
+						}
+					};
+					xhr.open("GET", "/version/{{ .Version }}");
+					xhr.send();
+				}
+				longPoll();
+			})();
+		</script>
 	</body>
 </html>
