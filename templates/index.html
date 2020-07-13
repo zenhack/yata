@@ -3,6 +3,11 @@
 	<head>
 		<meta charset="utf-8" />
 		<title>Yet Another TODO (App)</title>
+		<style>
+			input[type="text"] {
+				font-size: 16px;
+			}
+		</style>
 		<script>
 			var handleClick = function(formId) {
 				document.getElementById(formId).submit()
@@ -13,7 +18,7 @@
 
 		<form method="post" action="/todos/new">
 			<label for="descr">Descripton</label>
-			<input id="descr" name="descr" />
+			<input id="descr" type="text" name="descr" />
 			<input name="sort_col" type="hidden" value="{{ .Col }}" />
 			<input name="sort_dir" type="hidden" value="{{ .Dir }}" />
 			<button type="submit">Add</button>
